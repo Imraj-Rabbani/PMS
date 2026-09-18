@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  adminOrganisations Organisation[]      @relation("OrgAdmin")
+  orgMemberships     OrgMember[]
+  issueAssignments   IssueAssignment[]
+  comments           Comment[]
+}
+
+model Organisation {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  adminId     String
+  admin       User     @relation("OrgAdmin", fields: [adminId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members OrgMember[]
+  boards  Board[]
+}
+
+model OrgMember {
+  id        String   @id @default(uuid())
+  userId    String
+  orgId     String
+  role      OrgRole  @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  user User         @relation(fields: [userId], references: [id])
+  org  Organisation @relation(fields: [orgId], references: [id])
+
+  @@unique([userId, orgId])
+}
+
+enum OrgRole {
+  ADMIN
+  MEMBER
+}
+
+model Board {
+  id        String   @id @default(uuid())
+  title     String
+  orgId     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org      Organisation @relation(fields: [orgId], references: [id])
+  sections Section[]
+  issues   Issue[]
+}
+
+model Section {
+  id        String   @id @default(uuid())
+  title     String
+  boardId   String
+  order     Int      @default(0) // for drag-and-drop ordering
+  createdAt DateTime @default(now())
+
+  board  Board   @relation(fields: [boardId], references: [id])
+  issues Issue[]
+}
+
+model Issue {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  boardId     String
+  sectionId   String
+  priority    Priority @default(MEDIUM)
+  status      Status   @default(OPEN)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  board       Board             @relation(fields: [boardId], references: [id])
+  section     Section           @relation(fields: [sectionId], references: [id])
+  assignments IssueAssignment[]
+  comments    Comment[]
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Status {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CLOSED
+}
+
+model IssueAssignment {
+  id        String   @id @default(uuid())
+  userId    String
+  issueId   String
+  assignedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@unique([userId, issueId])
+}
+
+model Comment {
+  id          String   @id @default(uuid())
+  description String
+  issueId     String
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  issue Issue @relation(fields: [issueId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}

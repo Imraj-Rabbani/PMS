@@ -18,8 +18,8 @@
   },
   "devEngines": {
     "packageManager": {
-      "name": "npm",
-      "version": "10.8.2"
+      "name": "bun",
+      "version": "1.4.0"
     }
   },
   "workspaces": [
